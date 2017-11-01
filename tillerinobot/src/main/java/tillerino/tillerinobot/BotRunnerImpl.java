@@ -159,7 +159,8 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 			@Named("tillerinobot.irc.password") String password,
 			@Named("tillerinobot.irc.autojoin") String autojoinChannel,
 			@Named("tillerinobot.git.commit.id.abbrev") String commit,
-			@Named("tillerinobot.git.commit.message.short") String commitMessage) {
+			@Named("tillerinobot.git.commit.message.short") String commitMessage,
+			ResponseQueue queue) {
 		super();
 		this.tillerinoBot = tillerinoBot;
 		this.server = server.split(",");
@@ -169,6 +170,7 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 		this.autojoinChannel = autojoinChannel;
 		this.commit = commit;
 		this.commitMessage = commitMessage;
+		this.queue = queue;
 	}
 
 	private final Provider<IRCBot> tillerinoBot;
@@ -181,6 +183,8 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 	private final String commit;
 	private final String commitMessage;
 
+	private final ResponseQueue queue;
+
 	@Override
 	@CheckForNull
 	public CloseableBot getBot() {
@@ -191,10 +195,17 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 	private int reconnectTimeout = 10000;
 
 	IRCBot listener;
+
+	@CheckForNull
+	private Thread responseQueueThread;
 	
 	@Override
 	public void run() {
 		log.info("Starting Tillerinobot {}: {}", commit, commitMessage);
+		synchronized (this) {
+			responseQueueThread = new Thread(queue, "response queue");
+			responseQueueThread.start();
+		}
 		for (int i = 0; ; i++) {
 			if(!reconnect) {
 				break;
@@ -249,6 +260,9 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 		
 		synchronized (this) {
 			reconnect = false;
+			if (responseQueueThread != null) {
+				responseQueueThread.interrupt();
+			}
 			if(bot != null && bot.isConnected()) {
 				bot.sendIRC().quitServer();
 				try {

@@ -29,6 +29,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.pircbotx.Configuration;
 import org.pircbotx.User;
+import org.pircbotx.UserChannelDao;
 import org.pircbotx.hooks.Event;
 import org.pircbotx.hooks.events.ActionEvent;
 import org.pircbotx.hooks.events.ConnectEvent;
@@ -41,12 +42,6 @@ import org.pircbotx.output.OutputUser;
 import org.tillerino.ppaddict.rest.AuthenticationService;
 import org.tillerino.ppaddict.rest.AuthenticationService.Authorization;
 
-import tillerino.tillerinobot.AbstractDatabaseTest.CreateInMemoryDatabaseModule;
-import tillerino.tillerinobot.BotRunnerImpl.CloseableBot;
-import tillerino.tillerinobot.data.util.ThreadLocalAutoCommittingEntityManager;
-import tillerino.tillerinobot.rest.BeatmapResource;
-import tillerino.tillerinobot.rest.BeatmapsService;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -54,6 +49,11 @@ import com.google.inject.Provides;
 import com.google.inject.name.Names;
 
 import lombok.extern.slf4j.Slf4j;
+import tillerino.tillerinobot.AbstractDatabaseTest.CreateInMemoryDatabaseModule;
+import tillerino.tillerinobot.BotRunnerImpl.CloseableBot;
+import tillerino.tillerinobot.data.util.ThreadLocalAutoCommittingEntityManager;
+import tillerino.tillerinobot.rest.BeatmapResource;
+import tillerino.tillerinobot.rest.BeatmapsService;
 
 /**
  * The purpose of this class and its main function is to completely mock backend
@@ -88,7 +88,7 @@ public class LocalConsoleTillerinobot extends AbstractModule {
 				Names.named("tillerinobot.test.persistentBackend")).toInstance(
 				true);
 		bind(ExecutorService.class).annotatedWith(Names.named("tillerinobot.maintenance"))
-				.toInstance(Executors.newSingleThreadExecutor(r -> { Thread thread = new Thread(r); thread.setDaemon(true); return thread; }));
+				.toInstance(Executors.newSingleThreadExecutor(r -> { Thread thread = new Thread(r, "maintenance"); thread.setDaemon(true); return thread; }));
 		bind(AuthenticationService.class).toInstance(key -> {
 			if (key.equals("testKey")) {
 				return new Authorization(false);
@@ -116,7 +116,8 @@ public class LocalConsoleTillerinobot extends AbstractModule {
 			final IrcNameResolver resolver, EntityManagerFactory emf,
 			ThreadLocalAutoCommittingEntityManager em,
 			@Named("tillerinobot.git.commit.id.abbrev") String commit,
-			@Named("tillerinobot.git.commit.message.short") String commitMessage) throws Exception {
+			@Named("tillerinobot.git.commit.message.short") String commitMessage,
+			ResponseQueue queue) throws Exception {
 		final PircBotX pircBot = mock(PircBotX.class);
 		when(pircBot.isConnected()).thenReturn(true);
 		when(pircBot.getSocket()).thenReturn(mock(Socket.class));
@@ -180,6 +181,9 @@ public class LocalConsoleTillerinobot extends AbstractModule {
 				when(event.getBot()).thenReturn(pircBot);
 				dispatch(event);
 
+				Thread t = new Thread(queue, "response");
+				t.setDaemon(true);
+				t.start();
 				try (Scanner scanner = new Scanner(System.in)) {
 					for (; running.get() && userLoop(scanner);)
 						;
@@ -191,6 +195,11 @@ public class LocalConsoleTillerinobot extends AbstractModule {
 				System.out.println("please provide your name:");
 				final String username = scanner.nextLine();
 				when(user.getNick()).thenReturn(username);
+				{
+					UserChannelDao userChannelDao = mock(UserChannelDao.class);
+					when(pircBot.getUserChannelDao()).thenReturn(userChannelDao);
+					when(userChannelDao.getUser(username)).thenReturn(user);
+				}
 
 				em.setThreadLocalEntityManager(emf.createEntityManager());
 				if (resolver.resolveIRCName(username) == null
@@ -273,7 +282,7 @@ public class LocalConsoleTillerinobot extends AbstractModule {
 			}
 			
 			ExecutorService exec = Executors.newCachedThreadPool(r -> {
-				Thread t = new Thread(r);
+				Thread t = new Thread(r, "bot event loop");
 				t.setDaemon(true);
 				return t;
 			});

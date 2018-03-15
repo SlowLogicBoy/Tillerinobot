@@ -59,6 +59,8 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 	/**
 	 * This class is just there to adjust visibility
 	 */
+	// warns about copying messages below, but they are copied for visibility
+	@SuppressWarnings("squid:S1185")
 	static class CustomUserChannelDao extends UserChannelDao<User, Channel> {
 		public CustomUserChannelDao(PircBotX bot, BotFactory botFactory) {
 			super(bot, botFactory);
@@ -206,10 +208,7 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 			responseQueueThread = new Thread(queue, "response queue");
 			responseQueueThread.start();
 		}
-		for (int i = 0; ; i++) {
-			if(!reconnect) {
-				break;
-			}
+		for (int i = 0; reconnect; i++) {
 			try {
 				listener = tillerinoBot.get();
 				try {
@@ -231,7 +230,8 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 					}
 					if(reconnect) {
 						log.info("Connecting");
-						(bot = new CloseableBot(configurationBuilder.buildConfiguration())).startBot();
+						bot = new CloseableBot(configurationBuilder.buildConfiguration());
+						bot.startBot();
 						log.info("Bot stopped");
 					}
 				} finally {
@@ -247,7 +247,8 @@ public class BotRunnerImpl implements BotRunner, TidyObject {
 						Thread.sleep(reconnectTimeout);
 					}
 				} catch (InterruptedException e1) {
-					return;
+					Thread.currentThread().interrupt();
+					reconnect = false;
 				}
 			}
 		}

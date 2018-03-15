@@ -155,13 +155,13 @@ public class IRCBotTest extends AbstractDatabaseTest {
 		backend.setLastVisitedVersion("user", 0);
 		
 		bot.onEvent(message("user", "!recommend"));
-		assertEquals(IRCBot.versionMessage, queue.nextMessage());
-		verify(backend, times(1)).setLastVisitedVersion(anyString(), eq(IRCBot.currentVersion));
+		assertEquals(IRCBot.VERSION_MESSAGE, queue.nextMessage());
+		verify(backend, times(1)).setLastVisitedVersion(anyString(), eq(IRCBot.CURRENT_VERSION));
 		// pop recommendation
 		queue.nextMessage();
 
 		bot.onEvent(message("user", "!recommend"));
-		assertNotEquals(IRCBot.versionMessage, queue.nextMessage());
+		assertNotEquals(IRCBot.VERSION_MESSAGE, queue.nextMessage());
 	}
 	
 	@Test
@@ -169,7 +169,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 		IRCBot bot = getTestBot(backend);
 		
 		backend.hintUser("user", false, 100, 1000);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 
 		bot.onEvent(message("user", "!recommend"));
 		assertThat(queue.nextMessage()).contains("http://osu.ppy.sh");
@@ -195,7 +195,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 		IRCBot bot = getTestBot(backend);
 		
 		backend.hintUser("user", false, 100, 1000);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 
 		bot.onEvent(message("user", "no command"));
 	}
@@ -203,7 +203,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testWelcomeIfDonator() throws Exception {
 		BotBackend backend = mock(BotBackend.class);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 		
 		OsuApiUser osuApiUser = mock(OsuApiUser.class);
 		when(osuApiUser.getUserName()).thenReturn("TheDonator");
@@ -240,7 +240,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testHugs() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 
 		backend.hintUser("donator", true, 0, 0);
 
@@ -253,7 +253,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testComplaint() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 
 		backend.hintUser("user", false, 0, 1000);
 
@@ -267,7 +267,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testResetHandler() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 
 		backend.hintUser("user", false, 0, 1000);
 		
@@ -276,7 +276,6 @@ public class IRCBotTest extends AbstractDatabaseTest {
 		Integer id = resolver.resolveIRCName("user");
 
 		verify(recommendationsManager).forgetRecommendations(id);
-		verify(bot.manager).forgetRecommendations(id);
 	}
 
 	@Test
@@ -299,7 +298,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 
 			@Override
 			public int getLastVisitedVersion(String nick) throws SQLException, UserException {
-				return IRCBot.currentVersion;
+				return IRCBot.CURRENT_VERSION;
 			}
 		};
 		IRCBot bot = getTestBot(backend);
@@ -324,7 +323,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testGammaDefault() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 		backend.hintUser("user", false, 75000, 1000);
 
 		bot.onEvent(message("user", "!R"));
@@ -338,7 +337,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testGammaDefaultSub100k() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 		backend.hintUser("user", false, 125000, 1000);
 
 		bot.onEvent(message("user", "!R"));
@@ -352,7 +351,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testOsutrack1() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 		backend.hintUser("oliebol", false, 125000, 1000);
 
 		bot.onEvent(message("oliebol", "!u"));
@@ -363,7 +362,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	@Test
 	public void testOsutrack2() throws Exception {
 		IRCBot bot = getTestBot(backend);
-		doReturn(IRCBot.currentVersion).when(backend).getLastVisitedVersion(anyString());
+		doReturn(IRCBot.CURRENT_VERSION).when(backend).getLastVisitedVersion(anyString());
 		backend.hintUser("fartownik", false, 125000, 1000);
 
 		bot.onEvent(message("fartownik", "!u"));

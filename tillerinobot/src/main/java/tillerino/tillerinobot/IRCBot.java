@@ -72,6 +72,8 @@ import tillerino.tillerinobot.lang.Default;
 import tillerino.tillerinobot.lang.Language;
 import tillerino.tillerinobot.osutrack.OsutrackDownloader;
 import tillerino.tillerinobot.osutrack.UpdateResult;
+import tillerino.tillerinobot.recommendations.RecommendationRequestParser;
+import tillerino.tillerinobot.recommendations.RecommendationsManager;
 import tillerino.tillerinobot.rest.BotInfoService.BotInfo;
 
 @Slf4j
@@ -114,7 +116,7 @@ public class IRCBot extends CoreHooks {
 		this.queue = queue;
 		
 		commandHandlers.add(new ResetHandler(manager));
-		commandHandlers.add(new OptionsHandler(manager));
+		commandHandlers.add(new OptionsHandler(new RecommendationRequestParser(backend)));
 		commandHandlers.add(new AccHandler(backend));
 		commandHandlers.add(new WithHandler(backend));
 		commandHandlers.add(new RecommendHandler(manager));
@@ -523,64 +525,64 @@ public class IRCBot extends CoreHooks {
 			return;
 		}
 
-		welcomeIfDonator(ResponseQueue.hideEvent(event));
-	}
-	
-	private void welcomeIfDonator(IRCBotUser user) {
 		try {
-			Integer userid;
-			try {
-				userid = resolver.resolveIRCName(user.getNick());
-			} catch (IOException e) {
-				if (isTimeout(e)) {
-					log.debug("timeout while resolving username {} (welcomeIfDonator)", user.getNick());
-					return;
-				}
-				throw e;
-			}
-			
-			if(userid == null)
-				return;
-			
-			OsuApiUser apiUser;
-			try {
-				apiUser = backend.getUser(userid, 0);
-			} catch (IOException e) {
-				if (isTimeout(e)) {
-					log.debug("osu api timeout while getting user {} (welcomeIfDonator)", userid);
-					return;
-				}
-				throw e;
-			}
-			
-			if(apiUser == null)
-				return;
-			
-			if(backend.getDonator(apiUser) > 0) {
-				// this is a donator, let's welcome them!
-				UserData data = userDataManager.getData(userid);
-				
-				if (!data.isShowWelcomeMessage())
-					return;
-
-				long inactiveTime = System.currentTimeMillis() - backend.getLastActivity(apiUser);
-				
-				Response welcome = data.getLanguage().welcomeUser(apiUser,
-						inactiveTime);
-				sendResponse(welcome, user);
-
-				if (data.isOsuTrackWelcomeEnabled()) {
-					UpdateResult update = osutrackDownloader.getUpdate(user.getNick());
-					Response updateResponse = OsuTrackHandler.updateResultToResponse(update);
-					sendResponse(updateResponse, user);
-				}
-				
-				sendResponse(checkVersionInfo(user), user);
-			}
+			welcomeIfDonator(ResponseQueue.hideEvent(event));
 		} catch (InterruptedException e) {
-			// no problem
+			Thread.currentThread().interrupt();
 		} catch (Exception e) {
 			log.error("error welcoming potential donator", e);
+		}
+	}
+	
+	private void welcomeIfDonator(IRCBotUser user) throws SQLException, InterruptedException, IOException, UserException {
+		Integer userid;
+		try {
+			userid = resolver.resolveIRCName(user.getNick());
+		} catch (IOException e) {
+			if (isTimeout(e)) {
+				log.debug("timeout while resolving username {} (welcomeIfDonator)", user.getNick());
+				return;
+			}
+			throw e;
+		}
+		
+		if(userid == null)
+			return;
+		
+		OsuApiUser apiUser;
+		try {
+			apiUser = backend.getUser(userid, 0);
+		} catch (IOException e) {
+			if (isTimeout(e)) {
+				log.debug("osu api timeout while getting user {} (welcomeIfDonator)", userid);
+				return;
+			}
+			throw e;
+		}
+		
+		if(apiUser == null)
+			return;
+		
+		if(backend.getDonator(apiUser) > 0) {
+			// this is a donator, let's welcome them!
+			UserData data = userDataManager.getData(userid);
+			
+			if (!data.isShowWelcomeMessage())
+				return;
+
+			long inactiveTime = System.currentTimeMillis() - backend.getLastActivity(apiUser);
+			
+			Response welcome = data.getLanguage().welcomeUser(apiUser,
+					inactiveTime);
+			sendResponse(welcome, user);
+
+			if (data.isOsuTrackWelcomeEnabled()) {
+				UpdateResult update = osutrackDownloader.getUpdate(user.getNick());
+				Response updateResponse = OsuTrackHandler.updateResultToResponse(update);
+				sendResponse(updateResponse, user);
+			}
+			
+			sendResponse(checkVersionInfo(user), user);
 		}
 	}
 

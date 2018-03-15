@@ -47,7 +47,7 @@ public interface CommandHandler {
 			}
 			return list;
 		}
-		
+
 		/**
 		 * Executes a task after this response.
 		 */
@@ -80,7 +80,7 @@ public interface CommandHandler {
 		 */
 		boolean sends();
 	}
-	
+
 	/**
 	 * A regular IRC message. This should not be used as the direct response to
 	 * a command, but for other auxiliary messages, see {@link Success}.
@@ -94,7 +94,7 @@ public interface CommandHandler {
 			return true;
 		}
 	}
-	
+
 	/**
 	 * A regular IRC message, which will be logged as a successfully executed command.
 	 * This is the message that the command duration will be logged for.
@@ -108,7 +108,7 @@ public interface CommandHandler {
 			return true;
 		}
 	}
-	
+
 	/**
 	 * An "action" type IRC message
 	 */
@@ -121,7 +121,7 @@ public interface CommandHandler {
 			return true;
 		}
 	}
-	
+
 	/**
 	 * Returned by the handler to clarify that the command was handled, but no
 	 * response is sent.
@@ -138,7 +138,7 @@ public interface CommandHandler {
 			return false;
 		}
 	}
-	
+
 	@EqualsAndHashCode
 	@ToString
 	public static final class ResponseList implements Response {
@@ -356,34 +356,23 @@ public interface CommandHandler {
 		public final Response handle(String originalCommand, OsuApiUser apiUser, UserData userData) throws UserException,
 				IOException, SQLException, InterruptedException {
 			String lowerCase = originalCommand.toLowerCase();
-			final String remaining;
-			searchCommand: {
-				if (lowerCase.equals(alias)) {
-					remaining = "";
-					break searchCommand;
-				}
-				if (getLevenshteinDistance(lowerCase, command) <= 2) {
-					remaining = "";
-					break searchCommand;
-				}
-				if (lowerCase.startsWith(aliasWithSpace)) {
-					remaining = originalCommand.substring(2);
-					break searchCommand;
-				}
-				if (lowerCase.contains(" ")) {
-					int pos = lowerCase.indexOf(' ');
-					if (getLevenshteinDistance(lowerCase.substring(0, pos), command) <= 2) {
-						remaining = originalCommand.substring(pos + 1);
-						break searchCommand;
-					}
-				}
-				return null;
+			if (lowerCase.equals(alias)) {
+				return handleArgument("", apiUser, userData);
 			}
-
-			return handleArgument(remaining, apiUser, userData);
+			if (getLevenshteinDistance(lowerCase, command) <= 2) {
+				return handleArgument("", apiUser, userData);
+			}
+			if (lowerCase.startsWith(aliasWithSpace)) {
+				return handleArgument(originalCommand.substring(2), apiUser, userData);
+			}
+			int pos = lowerCase.indexOf(' ');
+			if (pos > 0 && getLevenshteinDistance(lowerCase.substring(0, pos), command) <= 2) {
+				return handleArgument(originalCommand.substring(pos + 1), apiUser, userData);
+			}
+			return null;
 		}
 
-		public abstract Response handleArgument(String remaining, OsuApiUser apiUser, UserData userData) throws UserException,
-				IOException, SQLException, InterruptedException;
+		public abstract Response handleArgument(String remaining, OsuApiUser apiUser, UserData userData)
+				throws UserException, IOException, SQLException, InterruptedException;
 	}
 }

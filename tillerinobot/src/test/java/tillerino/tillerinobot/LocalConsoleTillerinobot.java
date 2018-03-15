@@ -6,7 +6,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.management.ManagementFactory;
 import java.net.Socket;
 import java.net.URI;
 import java.util.Scanner;

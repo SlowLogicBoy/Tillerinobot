@@ -1,4 +1,4 @@
-package tillerino.tillerinobot;
+package tillerino.tillerinobot.testutil;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.rules.ExternalResource;
 
-import jersey.repackaged.com.google.common.util.concurrent.UncheckedExecutionException;
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import lombok.Getter;
 import lombok.experimental.Delegate;
 
@@ -20,7 +21,7 @@ import lombok.experimental.Delegate;
  * This is an {@link ExecutorService} implementation which executes all tasks on
  * a separate thread, but waits for completion of the task.
  */
-public class SynchronousExecutorService extends ExternalResource implements ExecutorService {
+public class SynchronousExecutorServiceRule extends ExternalResource implements ExecutorService {
 	@Delegate(types = ExecutorService.class)
 	private ExecutorService exec;
 

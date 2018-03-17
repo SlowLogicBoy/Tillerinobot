@@ -54,6 +54,7 @@ import tillerino.tillerinobot.recommendations.Model;
 import tillerino.tillerinobot.recommendations.RecommendationRequestParser;
 import tillerino.tillerinobot.recommendations.RecommendationsManager;
 import tillerino.tillerinobot.rest.BotInfoService.BotInfo;
+import tillerino.tillerinobot.testutil.SynchronousExecutorServiceRule;
 
 public class IRCBotTest extends AbstractDatabaseTest {
 	private User user(String nick) {
@@ -78,7 +79,7 @@ public class IRCBotTest extends AbstractDatabaseTest {
 	}
 
 	@Rule
-	public SynchronousExecutorService exec = new SynchronousExecutorService();
+	public SynchronousExecutorServiceRule exec = new SynchronousExecutorServiceRule();
 
 	@Mock
 	PircBotX pircBotX;
